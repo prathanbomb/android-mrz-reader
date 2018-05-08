@@ -1,0 +1,33 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 27
+    buildToolsVersion '27.0.3'
+
+    defaultConfig {
+        applicationId "com.mercuriete.mrz.reader"
+        minSdkVersion 17
+        targetSdkVersion 27
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles 'proguard.cfg'
+        }
+    }
+    lintOptions {
+        //we need to figure out why bounce castle is using javax
+        //because android lint complaint invalid package
+        disable 'InvalidPackage'
+        textReport true
+        textOutput 'stdout'
+    }
+}
+
+dependencies {
+    implementation 'com.android.support.constraint:constraint-layout:1.1.0'
+    compile 'com.android.support:appcompat-v7:27.1.1'
+    compile 'com.rmtheis:tess-two:8.0.0'
+    compile 'org.jmrtd:jmrtd:0.5.13'
+}
