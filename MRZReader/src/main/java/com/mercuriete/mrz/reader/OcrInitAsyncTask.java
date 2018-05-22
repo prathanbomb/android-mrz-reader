@@ -47,7 +47,7 @@ final class OcrInitAsyncTask extends AsyncTask<String, String, Boolean> {
 
   /**
    * AsyncTask to asynchronously download data and initialize Tesseract.
-   * 
+   *
    * @param activity
    *          The calling activity
    * @param baseApi
@@ -63,9 +63,9 @@ final class OcrInitAsyncTask extends AsyncTask<String, String, Boolean> {
    * @param ocrEngineMode
    *          Whether to use Tesseract, Cube, or both
    */
-  OcrInitAsyncTask(CaptureActivity activity, TessBaseAPI baseApi, ProgressDialog dialog, 
-      ProgressDialog indeterminateDialog, String languageCode, String languageName, 
-      int ocrEngineMode) {
+  OcrInitAsyncTask(CaptureActivity activity, TessBaseAPI baseApi, ProgressDialog dialog,
+                   ProgressDialog indeterminateDialog, String languageCode, String languageName,
+                   int ocrEngineMode) {
     this.activity = activity;
     this.context = activity.getBaseContext();
     this.baseApi = baseApi;
@@ -85,36 +85,34 @@ final class OcrInitAsyncTask extends AsyncTask<String, String, Boolean> {
     dialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
     dialog.setCancelable(false);
     dialog.show();
-    activity.setButtonVisibility(false);
   }
 
   /**
    * In background thread, perform required setup, and request initialization of
    * the OCR engine.
-   * 
+   *
    * @param params
    *          [0] Pathname for the directory for storing language data files to the SD card
    */
   protected Boolean doInBackground(String... params) {
 
-      File f = new File(this.activity.getCacheDir()+ "/tessdata/eng.traineddata.bak");
-      File folder = new File(this.activity.getCacheDir()+"/tessdata");
-      if (!f.exists()) try {
+    File f = new File(this.activity.getExternalFilesDir(null)+ "/tessdata/eng.traineddata");
+    File folder = new File(this.activity.getExternalFilesDir(null)+"/tessdata");
+    if (!f.exists()) try {
 
-          if (!f.exists() && !folder.mkdirs()) {
-              Log.e(TAG, "Couldn't make directory " + folder);
-              return false;
-          }
+      if (!f.exists() && !folder.mkdirs()) {
+        Log.e(TAG, "Couldn't make directory " + folder);
+        return false;
+      }
 
-          InputStream is = this.activity.getAssets().open("tessdata/eng.traineddata.bak");
-          FileOutputStream fos = new FileOutputStream(f);
-          copyFile(is,fos);
-          fos.close();
-          is.close();
-      } catch (Exception e) { throw new RuntimeException(e); }
+      InputStream is = this.activity.getAssets().open("tessdata/eng.traineddata");
+      FileOutputStream fos = new FileOutputStream(f);
+      copyFile(is,fos);
+      fos.close();
+      is.close();
+    } catch (Exception e) { throw new RuntimeException(e); }
 
-    File f2 = new File(this.activity.getCacheDir()+"/tessdata/eng.user-patterns");
-    File folder2 = new File(this.activity.getCacheDir()+"/tessdata");
+    File f2 = new File(this.activity.getExternalFilesDir(null)+"/tessdata/eng.user-patterns");
     if (!f2.exists()) try {
 
       InputStream is = this.activity.getAssets().open("tessdata/eng.user-patterns");
@@ -125,8 +123,8 @@ final class OcrInitAsyncTask extends AsyncTask<String, String, Boolean> {
     } catch (Exception e) { throw new RuntimeException(e); }
 
 
-      // Initialize the OCR engine
-    if (baseApi.init(this.activity.getCacheDir() + File.separator, languageCode, ocrEngineMode)) {
+    // Initialize the OCR engine
+    if (baseApi.init(this.activity.getExternalFilesDir(null) + File.separator, languageCode, ocrEngineMode)) {
       try {
         dialog.dismiss();
       } catch (IllegalArgumentException e) {
@@ -151,7 +149,7 @@ final class OcrInitAsyncTask extends AsyncTask<String, String, Boolean> {
 
   /**
    * Update the dialog box with the latest incremental progress.
-   * 
+   *
    * @param message
    *          [0] Text to be displayed
    * @param message
@@ -171,7 +169,7 @@ final class OcrInitAsyncTask extends AsyncTask<String, String, Boolean> {
   @Override
   protected void onPostExecute(Boolean result) {
     super.onPostExecute(result);
-    
+
     try {
       indeterminateDialog.dismiss();
     } catch (IllegalArgumentException e) {
@@ -184,7 +182,7 @@ final class OcrInitAsyncTask extends AsyncTask<String, String, Boolean> {
       activity.showLanguageName();
     } else {
       activity.showErrorMessage("Error", "Network is unreachable - cannot download language data. "
-          + "Please enable network access and restart this app.");
+              + "Please enable network access and restart this app.");
     }
   }
 

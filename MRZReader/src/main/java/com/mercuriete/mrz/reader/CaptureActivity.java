@@ -28,16 +28,21 @@ import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Rect;
 import android.graphics.Typeface;
+import android.hardware.Camera;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
+import android.support.annotation.RequiresApi;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.widget.ImageViewCompat;
 import android.text.ClipboardManager;
 import android.text.SpannableStringBuilder;
 import android.text.style.CharacterStyle;
@@ -56,9 +61,11 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ToggleButton;
 
 import com.googlecode.tesseract.android.TessBaseAPI;
 import com.mercuriete.mrz.reader.camera.CameraManager;
@@ -68,6 +75,7 @@ import org.jmrtd.lds.icao.MRZInfo;
 
 import java.io.File;
 import java.io.IOException;
+import java.security.Policy;
 
 /**
  * This activity opens the camera and does the actual scanning on a background thread. It draws a
@@ -157,7 +165,7 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
     /**
      * Flag to enable display of the on-screen shutter button.
      */
-    private static final boolean DISPLAY_SHUTTER_BUTTON = false;
+    private static final boolean DISPLAY_SHUTTER_BUTTON = true;
 
     /**
      * Languages for which Cube data is available.
@@ -196,6 +204,8 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
     private TextView statusViewTop;
     private TextView ocrResultView;
     private TextView translationView;
+    private FrameLayout flashBt;
+
     private View cameraButtonView;
     private View resultView;
     private View progressView;
@@ -222,6 +232,8 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
     private boolean isEngineReady;
     private boolean isPaused;
     private static boolean isFirstLaunch; // True if this is the first time the app is being run
+    private static boolean isFlash; // True if this is the first time the app is being run
+    private ImageView iconFliash;
 
     Handler getHandler() {
         return handler;
@@ -235,6 +247,7 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
         return cameraManager;
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @SuppressLint("ClickableViewAccessibility")
     @Override
     public void onCreate(Bundle icicle) {
@@ -255,7 +268,6 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
         viewfinderView = findViewById(R.id.viewfinder_view);
         cameraButtonView = findViewById(R.id.camera_button_view);
         resultView = findViewById(R.id.result_view);
-
         statusViewBottom = findViewById(R.id.status_view_bottom);
         registerForContextMenu(statusViewBottom);
         statusViewTop = findViewById(R.id.status_view_top);
@@ -267,8 +279,26 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
 
         // Camera shutter button
         if (DISPLAY_SHUTTER_BUTTON) {
-            shutterButton = findViewById(R.id.shutter_button);
-            shutterButton.setOnShutterButtonListener(this);
+            flashBt = findViewById(R.id.flashBt);
+            iconFliash = findViewById(R.id.iconFlash);
+            flashBt.setBackground(ContextCompat.getDrawable(CaptureActivity.this, R.drawable.toggle_flash_click));
+            iconFliash.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(getApplicationContext(), R.color.color_flash_off)));
+            flashBt.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    if(isFlash){
+                        flashBt.setBackground(ContextCompat.getDrawable(CaptureActivity.this, R.drawable.toggle_flash_click));
+                        iconFliash.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(getApplicationContext(), R.color.color_flash_off)));
+                        cameraManager.turnFlashlightOn();
+                        isFlash =false;
+                    }else{
+                        cameraManager.turnFlashlightOff();
+                        flashBt.setBackground(ContextCompat.getDrawable(CaptureActivity.this, R.drawable.toggle_flash));
+                        iconFliash.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(getApplicationContext(), R.color.color_flash_on)));
+                        isFlash =true;
+                    }
+                }
+            });
         }
 
         ocrResultView = findViewById(R.id.ocr_result_text_view);
@@ -364,6 +394,8 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
 
         isEngineReady = false;
     }
+
+
 
     private void requestPermission() {
         if (ContextCompat.checkSelfPermission(this,
@@ -491,8 +523,8 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
         setStatusViewForContinuous();
         DecodeHandler.resetDecodeState();
         handler.resetState();
-        if (shutterButton != null && DISPLAY_SHUTTER_BUTTON) {
-            shutterButton.setVisibility(View.VISIBLE);
+        if (flashBt != null && DISPLAY_SHUTTER_BUTTON) {
+            flashBt.setVisibility(View.VISIBLE);
         }
     }
 
@@ -748,7 +780,7 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
         }
 
         // Turn off capture-related UI elements
-        shutterButton.setVisibility(View.GONE);
+        flashBt.setVisibility(View.GONE);
         statusViewBottom.setVisibility(View.GONE);
         statusViewTop.setVisibility(View.GONE);
         cameraButtonView.setVisibility(View.GONE);
@@ -819,6 +851,7 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
             }
             result = result.replaceAll(" ", "");
             ocrResult.setText(result);
+            Log.w("textResultTmpArr",textResultTmpArr+" "+textResultTmpArr.length);
             if (ocrResult.getMeanConfidence() >= 70 && textResultTmpArr.length >= 2 && textResultTmpArr.length <= 3) {
                 try {
                     MRZInfo mrzInfo = new MRZInfo(result);
@@ -990,7 +1023,7 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
         viewfinderView.setVisibility(View.VISIBLE);
         cameraButtonView.setVisibility(View.VISIBLE);
         if (DISPLAY_SHUTTER_BUTTON) {
-            shutterButton.setVisibility(View.VISIBLE);
+            flashBt.setVisibility(View.VISIBLE);
         }
         lastResult = null;
         viewfinderView.removeResultText();
@@ -1018,10 +1051,10 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
 
     @SuppressWarnings("unused")
     void setButtonVisibility(boolean visible) {
-        if (shutterButton != null && visible && DISPLAY_SHUTTER_BUTTON) {
-            shutterButton.setVisibility(View.VISIBLE);
-        } else if (shutterButton != null) {
-            shutterButton.setVisibility(View.GONE);
+        if (flashBt != null && visible && DISPLAY_SHUTTER_BUTTON) {
+            flashBt.setVisibility(View.VISIBLE);
+        } else if (flashBt != null) {
+            flashBt.setVisibility(View.GONE);
         }
     }
 
@@ -1031,7 +1064,7 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
      * @param clickable True if the button should accept a click
      */
     void setShutterButtonClickable(boolean clickable) {
-        shutterButton.setClickable(clickable);
+        flashBt.setClickable(clickable);
     }
 
     /**

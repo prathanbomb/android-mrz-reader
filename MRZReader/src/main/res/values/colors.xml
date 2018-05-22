@@ -15,9 +15,9 @@
  See the License for the specific language governing permissions and
  limitations under the License.
  -->
- 
- <!-- For color names, see http://en.wikipedia.org/wiki/HTML_color_names -->
- 
+
+<!-- For color names, see http://en.wikipedia.org/wiki/HTML_color_names -->
+
 <resources>
   <color name="help_button_view">#ffcccccc</color> <!-- help button view background color -->
   <color name="help_view">#ff404040</color> <!-- background color for entire help view -->
@@ -30,4 +30,7 @@
   <color name="viewfinder_corners">#ffffffff</color> <!-- four corner elements for viewfinder -->
   <color name="viewfinder_frame">#ffd6d6d6</color> <!-- viewfinder rectangle -->
   <color name="viewfinder_mask">#60000000</color>  <!-- viewfinder exterior darkened area -->
+  <color name="color_flash_off">#00aab7</color>  <!-- viewfinder exterior darkened area -->
+  <color name="color_flash_on">#ffff</color>  <!-- viewfinder exterior darkened area -->
+
 </resources>
