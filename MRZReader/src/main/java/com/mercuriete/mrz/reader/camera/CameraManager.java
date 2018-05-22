@@ -266,5 +266,20 @@ public final class CameraManager {
     return new PlanarYUVLuminanceSource(data, width, height, rect.left, rect.top,
                                         rect.width(), rect.height(), reverseImage);
   }
+  public void turnFlashlightOn() {
 
+    Camera.Parameters parameters = camera.getParameters();
+    parameters.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
+    camera.setParameters(parameters);
+
+  }
+
+  public void turnFlashlightOff() {
+
+    Camera.Parameters parameters = camera.getParameters();
+    parameters.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
+    camera.setParameters(parameters);
+
+
+  }
 }
